@@ -2,14 +2,15 @@
   <header class="page-header">
     <div>
       <p class="eyebrow">Angular httpResource Demo</p>
-      <h1>Reactive Product Search</h1>
+      <h1>Reactive Product Search Dashboard</h1>
       <p class="subtitle">
-        Signal-based request state with derived summary values.
+        A small read-only feature built around reactive request state, filtering,
+        sorting, and derived metrics.
       </p>
     </div>
   </header>
 
-  <section class="panel search-panel">
+  <section class="panel controls-panel">
     <div class="search-row">
       <input
         type="text"
@@ -18,13 +19,38 @@
         placeholder="Search products..." />
 
       <button type="button" (click)="store.search()">Search</button>
+      <button type="button" class="secondary" (click)="store.reload()">Reload</button>
+    </div>
+
+    <div class="filters-row">
+      <label>
+        <span>Category</span>
+        <select
+          [ngModel]="store.selectedCategory()"
+          (ngModelChange)="store.setCategory($event)">
+          @for (category of store.categories(); track category) {
+            <option [ngValue]="category">{{ category }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Sort by</span>
+        <select
+          [ngModel]="store.sortBy()"
+          (ngModelChange)="store.setSort($event)">
+          @for (option of store.sortOptions; track option.key) {
+            <option [ngValue]="option.key">{{ option.label }}</option>
+          }
+        </select>
+      </label>
     </div>
   </section>
 
   <section class="stats-grid">
     <article class="panel stat-card">
-      <span class="label">Total results</span>
-      <strong>{{ store.total() }}</strong>
+      <span class="label">Visible results</span>
+      <strong>{{ store.totalResults() }}</strong>
     </article>
 
     <article class="panel stat-card">
@@ -33,25 +59,83 @@
     </article>
 
     <article class="panel stat-card">
+      <span class="label">Highest price</span>
+      <strong>${{ store.highestPrice() }}</strong>
+    </article>
+
+    <article class="panel stat-card">
       <span class="label">Top brand</span>
       <strong>{{ store.topBrand() }}</strong>
     </article>
   </section>
 
-  <section class="panel">
-    @if (store.results.isLoading()) {
+  @if (store.results.isLoading()) {
+    <section class="panel">
       <p class="state">Loading...</p>
-    } @else if (store.results.error()) {
-      <p class="state error">Could not load products.</p>
-    } @else {
-      <ul class="result-list">
-        @for (product of store.products(); track product.id) {
-          <li>
-            <strong>{{ product.title }}</strong>
-            <span>{{ product.brand }} • {{ product.category }} • ${{ product.price }}</span>
-          </li>
+    </section>
+  } @else if (store.errorMessage()) {
+    <section class="panel">
+      <p class="state error">{{ store.errorMessage() }}</p>
+    </section>
+  } @else {
+    <div class="content-grid">
+      <section class="panel">
+        <div class="list-header">
+          <h2>Products</h2>
+          <span>{{ store.totalResults() }} items</span>
+        </div>
+
+        <div class="product-list">
+          @for (product of store.products(); track product.id) {
+            <button
+              type="button"
+              class="product-item"
+              [class.active]="product.id === store.selectedProduct()?.id"
+              (click)="store.selectProduct(product)">
+              <div class="product-item__top">
+                <strong>{{ product.title }}</strong>
+                <span>${{ product.price }}</span>
+              </div>
+
+              <div class="product-item__meta">
+                {{ product.brand }} • {{ product.category }}
+              </div>
+            </button>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="details-header">
+          <h2>Selected product</h2>
+        </div>
+
+        @if (store.selectedProduct(); as product) {
+          <div class="detail-grid">
+            <div class="detail-card">
+              <span class="label">Title</span>
+              <strong>{{ product.title }}</strong>
+            </div>
+
+            <div class="detail-card">
+              <span class="label">Brand</span>
+              <strong>{{ product.brand }}</strong>
+            </div>
+
+            <div class="detail-card">
+              <span class="label">Category</span>
+              <strong>{{ product.category }}</strong>
+            </div>
+
+            <div class="detail-card">
+              <span class="label">Price</span>
+              <strong>${{ product.price }}</strong>
+            </div>
+          </div>
+        } @else {
+          <p class="empty-state">No product available for the current filters.</p>
         }
-      </ul>
-    }
-  </section>
+      </section>
+    </div>
+  }
 </section>
